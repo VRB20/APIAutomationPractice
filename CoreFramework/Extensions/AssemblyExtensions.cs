@@ -7,6 +7,14 @@ namespace CoreFramework.Extensions
     public static class AssemblyExtensions
     {
         private static readonly IFileSystem FileSystem = new FileSystem();
+
+        public static IDirectoryInfo GetArtifactsFolder(this Assembly executingAssembly, string foldername = ".build")
+        {
+            var testArtifactsFolder = FileSystem.Path.Combine(GetRepositoryRootFolder(executingAssembly).FullName, foldername);
+            FileSystem.Directory.CreateDirectory(testArtifactsFolder);
+
+            return FileSystem.DirectoryInfo.FromDirectoryName(testArtifactsFolder);
+        }
         public static IDirectoryInfo GetLocation(this Assembly executingAssembly)
         {
             executingAssembly = executingAssembly ?? Assembly.GetExecutingAssembly();
@@ -29,6 +37,22 @@ namespace CoreFramework.Extensions
 
             return FileSystem.DirectoryInfo.FromDirectoryName(folder);
         }
-                
+        public static IDirectoryInfo GetRepositoryRootFolder(this Assembly executingAssembly)
+        {
+            var location = executingAssembly.GetLocation();
+
+            IDirectoryInfo updatedLocation = null;
+            if (location.Parent.Name.Equals("bin", StringComparison.InvariantCultureIgnoreCase))
+                updatedLocation = location.Parent.Parent.Parent.Parent;
+
+            if (location.Parent.Parent.Name.Equals("bin", StringComparison.InvariantCultureIgnoreCase))
+                updatedLocation = location.Parent.Parent.Parent.Parent.Parent;
+
+            return updatedLocation ?? location;
+        }
+
+        public static IDirectoryInfo GetSolutionFolder(this Assembly executingAssembly) => FileSystem.DirectoryInfo.FromDirectoryName(
+           FileSystem.Path.Combine(GetRepositoryRootFolder(executingAssembly).FullName, "src"));
+
     }
 }
