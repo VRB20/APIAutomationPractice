@@ -25,6 +25,14 @@ namespace CoreFramework.UnitTests
 
             var constructionBatch = testCase.ConstructionBatch;
             var rows = constructionBatch.ToDataTableRows();
+        }
+
+        [Test]
+        [Explicit]
+        public void TestCaseSource_runs_without_error()
+        {
+
+            var testCaseSourceGenerator = ApiAutoRunnerBase.TestCaseSource(@"API Input\ReqRes");
 
         }
     }

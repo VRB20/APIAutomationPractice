@@ -26,10 +26,13 @@ namespace CoreFramework.Infrastructure
         private static readonly IDirectoryInfo GetTestDataFolderForFileWithIssues = typeof(ApiAutoRunnerBase).Assembly.GetArtifactsFolder(@"TestData\Test\TestData-with-issues");
         private static readonly IDirectoryInfo GetTestDataFolderForScenarioID = typeof(ApiAutoRunnerBase).Assembly.GetArtifactsFolder(@"TestData\Test\Progression\ScenarioID");
         private static readonly IDirectoryInfo ArtifactsFolder = typeof(ApiAutoRunnerBase).Assembly.GetSolutionFolder();
+        private static readonly IDirectoryInfo GetTestDataFolderV1 = typeof(ApiAutoRunnerBase).Assembly.GetArtifactsFolder(@"TestData\Test");
+        
 
         public static List<TestCaseData> TestCaseSource(string FolderPath)
         {
             testCaseData = null;
+            var GetTestDataFolder = Assembly.GetExecutingAssembly().GetFolder(@"TestData");
             List<TestCaseData> TheFunc() =>
                 TestCaseSourceGenerator(
                     Path.Combine(GetTestDataFolder.FullName,FolderPath).AsDirectoryInfo(),

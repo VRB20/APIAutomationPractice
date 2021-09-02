@@ -29,6 +29,8 @@ namespace CoreFramework.ObjectGraphBatchValidation
                 objectToValidate.Cast<object>()
                     .SelectMany(item => PerformBatchValidation(item, batchItem))
                     .ToList());
+        public static long AssessmentRunId = 0;
+        public static bool Ass_validationFlag = false;
 
         public static ValidationErrors PerformBatchValidation<T>(this T objectToValidate, BatchItem batchItem)
         {
@@ -39,7 +41,6 @@ namespace CoreFramework.ObjectGraphBatchValidation
                     .ToList();
 
                 var theBatchFoundInCollection = collectionEnumerationResult.Any(x => !x.Any());
-
                 return theBatchFoundInCollection
                     ? ValidationErrors.Empty
                     : string.Join(Environment.NewLine, collectionEnumerationResult.SelectMany(x => x));
@@ -109,6 +110,20 @@ namespace CoreFramework.ObjectGraphBatchValidation
             return ValidationErrors.From(childValidationResults.Union(performPropertyBatchValidationErrors));
         }
 
+        private static ValidationErrors AssessmentIdValidation(JObject jResponseToValidate, KeyValuePair<string, string> item)
+        {
+            string value = null, AssessmentId = null;
+            if(item.Key.Equals("AssessmentId"))
+            {
+                value = jResponseToValidate.SelectToken($"{item.Key}").ToString();
+                AssessmentRunId = AssessmentRunId.Equals(0) ? value.Replace("LGD", "").ToLongSafe() : AssessmentRunId + 1;
+                AssessmentId = "LGD" + AssessmentRunId;
+                Ass_validationFlag = true;
+                return value.Equals(AssessmentId) ? ValidationErrors.Empty : $"Unable to find property {item.Key} with value {AssessmentId}";
+            }
+
+            return ValidationErrors.Empty;
+        }
         public static ValidationErrors PerformIndividualBatchValidation<T>(this T objectToValidate, Batch batch)
         {
             JObject jResponseToValidate = JObject.Parse(JsonConvert.SerializeObject(objectToValidate));
@@ -117,13 +132,17 @@ namespace CoreFramework.ObjectGraphBatchValidation
             var directPropertiesValidationResults = directPropertiesBatch.Select(item =>
             {
                 if (!jResponseToValidate.ContainsKey($"{item.Key}"))
-                    return $"Unable to find property{item.Key}";
+                    return $"Unable to find property {item.Key}";
 
-                if (jResponseToValidate.SelectToken($"{item.Key}").ToString() != item.Value)
-                    return $"Unable to find property{item.Key} with value {item.Value}";
+                AssessmentIdValidation(jResponseToValidate, item); 
+
+                if (Ass_validationFlag == false && jResponseToValidate.SelectToken($"{item.Key}").ToString() != item.Value)
+                    return $"Unable to find property {item.Key} with value {item.Value}";
                 else
                     return ValidationErrors.Empty;
             }).ToList().ToValidationErrors();
+
+            Ass_validationFlag = false;
 
             var childPropertiesBatch = batch.Select(item => item.Except(directPropertiesBatch).ToDictionary(x => x.Key, x => x.Value)).ToBatch();
             var childValidationResults = objectToValidate.PerformChildValidation(childPropertiesBatch).ToList().ToValidationErrors();
